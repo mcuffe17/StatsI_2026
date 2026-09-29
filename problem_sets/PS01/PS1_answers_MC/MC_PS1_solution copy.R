@@ -1,0 +1,208 @@
+#####################
+# load libraries
+# set wd
+# clear global .envir
+#####################
+
+# remove objects
+rm(list=ls())
+# detach all libraries
+detachAllPackages <- function() {
+  basic.packages <- c("package:stats", "package:graphics", "package:grDevices", "package:utils", "package:datasets", "package:methods", "package:base")
+  package.list <- search()[ifelse(unlist(gregexpr("package:", search()))==1, TRUE, FALSE)]
+  package.list <- setdiff(package.list, basic.packages)
+  if (length(package.list)>0)  for (package in package.list) detach(package,  character.only=TRUE)
+}
+detachAllPackages()
+
+# load libraries
+pkgTest <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[,  "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg,  dependencies = TRUE)
+  sapply(pkg,  require,  character.only = TRUE)
+}
+
+# here is where you load any necessary packages
+# ex: stringr
+# lapply(c("stringr"),  pkgTest)
+
+lapply(c(),  pkgTest)
+
+library(tidyr)
+library(ggplot2)
+
+#####################
+# Problem 1
+##Education A school counselor was curious about the average of IQ of the students in her school and took a random sample of 25 students’ IQ scores. 
+##The following is the data set is below: 
+##Find a 90% confidence interval for the average student IQ in the school
+#####################
+
+y <- c(105, 69, 86, 100, 82, 111, 104, 110, 87, 108, 87, 90, 94, 113, 112, 98, 80, 97, 95, 111, 114, 89, 95, 126, 98)
+
+##to find the confidence interval you must find the mean, variance, standard deviation, standard of error, margin of error 
+##first step is find the mean 
+
+sum_y <- sum(y)
+print(sum_y)
+
+length_y <- length(y)
+print(length_y)
+
+#mean = sum_y / Length_y
+
+mean_y <- sum_y / length_y
+
+print (mean_y)
+
+##alternatively you can find the mean by going mean(y), as seen below:
+
+mean(y)
+
+##next you need to find the standard deviation. first step is to get the sum of every individual data value subtract the mean squared 
+##to find this we can use a loop to go through each data value and subtract the mean, then square the results 
+data_minus_mean <- 0 
+for (i in 1:length(y)){
+  data_minus_mean[i] <- y[i] - mean(y)
+}
+print (data_minus_mean)
+
+squared_data <- data_minus_mean ^2
+
+print(squared_data)
+
+round(squared_data, digits = 2)
+
+
+sum_SD <- sum(squared_data)
+
+print(sum_SD)
+
+## now that we have the sum of every individual data value subtracted the mean and squared, we need the sum_SD over the number of data values in this sample, aka the length(y) - 1
+
+square_root <- sum_SD / (length_y - 1)
+ 
+print(square_root)
+
+standard_deviation <- sqrt(square_root)
+
+print(standard_deviation)
+
+##alternatively you can also use sd(x)
+
+sd_formula <- sd(y)
+
+print(sd_formula)
+
+##so now that we have our mean and our standard deviation, we can find the confidence interval for the average student IQ
+## so the first step in doing the formula is finding the Standard Error (SE), which is just the SD over the square root of our sample number 
+
+SE <- standard_deviation / (sqrt(length_y))
+print(SE)
+
+##the next step requires finding the Critical Value t*, this requires the sample number minus 1 (-1), and a two-tailed significance level of alpha = 0.10, so giving 0.05 in each tail)
+
+critical_value<- abs(qt(p = .05, df = 24))
+print(critical_value)
+
+##next we need to find the margin of error which critical value by the Standard Error
+
+margin_error <-  critical_value* SE
+
+print(margin_error)
+
+## and the last step in finding the confidence interval is to subtract and add the margin of error from the mean 
+
+lower_limit <- mean(y) - margin_error
+upper_limit <- mean(y) + margin_error
+
+print(lower_limit)
+print(upper_limit)
+
+##You can state with 90% confidence that the true average of the entire population falls somewhere between 93.96 and 102.92.
+
+##	Next, the school counselor was curious whether the average student IQ in her school is higher than the average IQ score (100) among all the schools in the country. Using the same sample, conduct the appropriate hypothesis test with α = 0.05.
+
+##Null Hypothesis (H0): y < 100 (The school's average IQ is less than or equal to the national average).
+##Alternative Hypothesis (H1): y> 100 (The school's average IQ is higher than the national average).
+
+## first step is find the t-value using the same standard of error and mean we used in question 1 
+## so we need to find the mean - hypothetical mean / the standard of error
+
+
+national_average <- 100
+t_test <- (mean(y) - national_average) / SE 
+print(t_test)
+
+## this measures how far the  sample data landed from the target, the hypothetical mean/ national average. The data landed 1.012 standard errors below the target.
+
+##my alternative hypothesis (H1) is that the school's average IQ (98.44) is higher than the national average (100), we look at the upper tail p_value
+
+# Logical true/false check: Did our t test beat the critical value?
+if (t_test <= critical_value) {
+  print("Hypothesis Outcome: FAIL TO REJECT the null hypothesis.")
+  print("why becuase the calculated t-test did not exceed the critical value.")
+} else {
+  print("Hypothesis Outcome: REJECT the null hypothesis.")
+  print("why becuase the calculated t-test exceeded the critical value.")
+}
+#####################
+# Problem 2
+#####################
+
+expenditure <- read.table("https://raw.githubusercontent.com/ASDS-TCD/StatsI_2026/main/datasets/expenditure.txt", header=T)
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("tidyr")
+install.packages("GGally")
+install.packages("tidyverse")
+library(tidyverse)
+
+
+
+
+summary(expenditure) #i want to see what i am working with for the table, this allows me to see the basic stats
+head(expenditure) #very much like the summary but returns only the first 6 rows within the data, so i can see Y, X1, X2, X3, as their actual data points, this also allows me to see state and region otherwise without it the state would be treated as a data point.
+
+#im only pulling out the numeric data points- as state and region don't belong in a scatter plot 
+expenditure_data1 <- (expenditure[, c("Y", "X1", "X2", "X3")])
+round(cor(expenditure_data1), 2)
+
+
+library(GGally)
+ggpairs(expenditure_data1)
+##found inspiration to chart the plot/ graph like this via https://www.rdocumentation.org/packages/
+##The relationships among Y, X1, X2, and X3 are displayed in the graph with the correlations. From the graph, you can see that X1, X2, and X3 each have a positive relationship with per capita shelter/housing expenditures (Y). The correlation between Y and X1, or personal income, has the strongest relationship with shelter expenditure data (r = 0.53), followed by X3/urbanization (r = 0.46) and financial insecurity (X2, r = 0.45). Each of these datasets represents states with higher income, more financially secure residents, and/or more urban populations spending more per capita on housing assistance. Yet, none of these variables represents all of the variation in spending- the data in each panel resembles a moderate upward trend in spending.
+##However, among the variables, the strongest correlation in the matrix is between income (X1) and urbanization (X3), with a correlation of r = 0.60, meaning that states with more residents living in urban areas have a higher income per capita. As the relationship between X1 and X3 is stronger than either variable’s relationship with Y, it may be worth investigating multicollinearity, as a lot of the information about X1 and X3 may overlap. From the graph, the lower correlation scores between variables such as income and financial insecurity (X1-X2, r = 0.21), and urbanization and financial insecurity (X2-X3, r = 0.22), suggest that financial insecurity may be an umbrella term for complexities not represented well within the data, such as debt or higher cost of living, rather than immediately associating financial insecurity with lower income.
+##Overall, the matrix gives a plausible understanding of the states. For example, wealthier, more urban states may have higher tax brackets that allocate more resources towards establishing social service infrastructure.
+
+expenditure_labeled <- expenditure
+expenditure_labeled$Region <- factor(expenditure$Region, 
+                             labels = c("Northeast", "North Central", "South", "West"))
+  ggplot(expenditure, aes(x = Region, y = Y)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  labs(title = "Housing Expenditure by Region",
+       x = "Region",
+       y = "Per capita housing expenditure")
+  
+  aggregate(Y ~ Region, data = expenditure, FUN = mean)
+  
+  ##According the boxplots above, the region that has the highest per capita expenditure on housing assistance is the West or (4). Its mean sits at 88.3, whereas the next highest is the North Central region (3) with an average of  83.9. 
+  
+  ggplot(expenditure, aes(x = X1, y = Y)) +
+    geom_point() +
+    labs(title = "Housing Expenditure vs Personal Income",
+         x = "Per capita personal income (X1)",
+         y = "Per capita housing expenditure (Y)")
+
+  ##The graph between Y and X1 shows a positive relationship. Although from question 2.a it was already established in the matrix there was a moderately positive correlation (r = 0.53).  Therefore, as income rises across various states and regions, the housing expenditure does as well, hence the positive correlation. However, the relationship isn't too sucessful as there are points that scatter somewhat upwards rather than a straight line of pure correlating evidence. This means some of the spending is on housing but an full explanation of the variation in spending within each state.
+  
+  ggplot(expenditure, aes(x = X1, y = Y, color = factor(Region), shape = factor(Region))) +
+    geom_point() +
+    labs(title = "Housing Expenditure vs Personal Income by Region",
+         x = "Per capita personal income (X1)",
+         y = "Per capita housing expenditure (Y)",
+         color = "Region",
+         shape = "Region")
