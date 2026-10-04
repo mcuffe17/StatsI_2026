@@ -12,9 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load-packages, message=FALSE, warning=FALSE}
-# Packages needed for this assignment.
-# install.packages() only needs to be run once ever on your machine -
-# it's commented out here so knitting doesn't try to reinstall every time.
+
 
 # install.packages("tidyverse")
 # install.packages("GGally")
@@ -147,11 +145,25 @@ school is higher than the average IQ score (100) among all schools in the
 country. Using the same sample, conduct the appropriate hypothesis test with
 alpha = 0.05.
 
+
+To answer this question- we need to look at a lot of the same descriptive statistics we found in question 1.
+The Metrics: 
+- Mean = 98.44 
+- length = 25 
+- Variance = 171.4233
+- Standard Deviation = 13.09287 
+- Standard Error = 2.618575
+- Critical Value = 1.710882
+- Margin of error = 4.480072
+- lower limit = 93.95993
+- upper limit = 102.9201
+- alpha = 0.05
+
 - Null Hypothesis (H0): the school's average IQ is less than or equal to the national average.
 - Alternative Hypothesis (H1): the school's average IQ is higher than the
   national average.
 
-The first step is to find the t-value using the same standard error and mean from the confidence interval above: the sample mean minus the hypothetical mean, divided by the standard error.
+The first step is to find the t-value using the standard error and mean from the confidence interval above: the sample mean minus the hypothetical mean, divided by the standard error.
 
 ```{r p1-t-test}
 national_average <- 100
@@ -160,10 +172,10 @@ print(t_test)
 ```
 
 This measures how far the sample data landed from the target (the
-hypothetical/national average). The data landed 1.012 standard errors below
+national average). The data landed 1.012 standard errors below
 the target.
 
-Since the alternative hypothesis (H1) is that the school's average IQ (98.44) is higher than the national average (100), we look at the upper tail.
+Since the alternative hypothesis (H1) is that the school's average IQ (98.44) is higher than the national average (100), we look at the upper tail. This means a 1 sided test 
 
 ```{r p1-verdict}
 # Logical true/false check: did our t-test beat the critical value?
@@ -298,3 +310,10 @@ plot_y_x1_region
 
 ggsave("scatter_Y_X1_region.pdf", plot = plot_y_x1_region, width = 7, height = 5)
 ```
+
+ 
+The positive relationship between income and housing expenditures, as seen in the previous graphs splits states by region. The southern states (the blue squares) sit towards the bottom left of the graph, as a group they are clustered at the low income, low spending end, sitting at 2000 in income and 80 in spending. meanwhile, the northeastern states (red circle) include a few of the highest income points, with spednding having a large range from 60-120. the north central states (green triangle) form a a tight little cluster in the middle of both spending and income variable. with 42 - 129 within spending at similar incomes levels. income doesn't explain their spending. 
+part of the income and spending relationship reflects difference bwteen each region. there are still lots of variations within each region that income doesn't account for
+
+
+
