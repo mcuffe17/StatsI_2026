@@ -1,3 +1,6 @@
+install.packages("tinytex")
+tinytex::install_tinytex()
+
 #####################
 # load libraries
 # set wd
