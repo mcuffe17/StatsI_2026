@@ -1,0 +1,383 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{codegray}{gray}{0.95}
+\definecolor{commentgreen}{rgb}{0.1,0.45,0.1}
+\definecolor{stringred}{rgb}{0.65,0.1,0.1}
+
+\lstset{
+  language=R,
+  basicstyle=\ttfamily\footnotesize,
+  commentstyle=\color{commentgreen}\itshape,
+  stringstyle=\color{stringred},
+  keywordstyle=\color{blue},
+  backgroundcolor=\color{codegray},
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  rulecolor=\color{black!25},
+  showstringspaces=false,
+  aboveskip=0.8em,
+  belowskip=0.8em
+}
+
+% Placeholder for numbers to be copied from the R console
+\newcommand{\fillin}[1]{\textbf{[#1]}}
+
+\title{Problem Set 2\\\large Applied Statistics / Quantitative Methods 1}
+\author{Mackenzie}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+%==========================================================
+\section*{Question 1: Bribery and Driver Class}
+%==========================================================
+
+The data cross-tabulate driver class (upper, lower) against the outcome of a traffic encounter (not stopped, bribe requested, stopped/warning), for a total of $n = 42$ drivers.
+
+\subsection*{1(a) Chi-square statistic}
+
+\begin{lstlisting}
+##Make the contingency table 
+con_tab <- matrix(c(14, 6, 7,
+                7, 7, 1),
+              nrow = 2, byrow = TRUE,
+              dimnames = list(Class   = c("Upper", "Lower"),
+                              Outcome = c("Not stopped", "Bribe requested", "Stopped/warning")))
+print(con_tab)
+
+
+# Step 1: totals of each row, column and the overall test
+row_tot <- rowSums(con_tab)
+col_tot <- colSums(con_tab)
+n       <- sum(con_tab)
+
+print(row_tot)
+print(col_tot)
+print(n)
+
+\end{lstlisting}
+
+The observed counts, with row and column totals, are:
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+ & Not stopped & Bribe requested & Stopped/warning & Total \\
+\midrule
+Upper & 14 & 6 & 7 & 27 \\
+Lower & 7 & 7 & 1 & 15 \\
+\midrule
+Total & 21 & 13 & 8 & 42 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}
+# Step 2: expected counts = (row total * column total) / grand total
+# multiplies every row total by every column total, giving the full grid at once
+##this is the distribution according to expected counts under independence
+expected <- (row_tot %*% t(col_tot)) / n
+print(expected)
+
+\end{lstlisting}
+
+Under the null hypothesis of independence between class and outcome, the expected count in each cell is
+\[
+E_{ij} = \frac{(\text{row total}_i)(\text{column total}_j)}{n}.
+\]
+This gives:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & Not stopped & Bribe requested & Stopped/warning \\
+\midrule
+Upper & 13.50 & 8.36 & 5.14 \\
+Lower & 7.50 & 4.64 & 2.86 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}
+# Step 3: chi-square statistic = sum of ((O)bserved - (E)xpected ^2 / E over all cells)
+chi_sq <- sum((con_tab - expected)^2 / expected)
+print(chi_sq)
+
+
+#alternativly can also do this : 
+result <- chisq.test(con_tab)
+print(result)
+#extract the expected counts directly
+result$expected
+\end{lstlisting}
+
+The chi-square statistic is
+\[
+\chi^2 = \sum_{i,j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \approx 3.79.
+\]
+The built-in \texttt{chisq.test()} returns the same value, which confirms the manual calculation.
+
+
+\subsection*{1(b) Significance at $\alpha = 0.10$}
+
+The table is $2 \times 3$, so the degrees of freedom are $(2-1)(3-1) = 2$. The p-value is
+\[
+p = P(\chi^2_2 \geq 3.79) \approx 0.150.
+\]
+At $\alpha = 0.10$ the critical value is $\chi^2_{2,\,0.10} \approx 4.605$. Since $3.79 < 4.605$ (equivalently, $p = 0.150 > 0.10$), we \textbf{fail to reject} the null hypothesis. This result means that there is not enough statistical evidence at the 10\% significance level to suggest that the variables are related.
+
+\begin{lstlisting}
+# Degrees of freedom and p-value
+df <- (nrow(con_tab) - 1) * (ncol(con_tab) - 1)
+p_val  <- pchisq(chi_sq, df = df, lower.tail = FALSE)
+
+print(df)
+print(p_val)
+
+
+#so the question asks what happens when the alpha is equal to 0.1 or 10%
+alpha <- 0.1
+
+if (p_val <= alpha){
+  print("results are statistically significant. Reject the null hypothesis")
+}else{
+  print("results are not statistically significant. Fail to reject the null hypothesis")
+}
+
+\end{lstlisting}
+
+\subsection*{1(c) Standardized residuals}
+
+For each cell the standard error is
+\[
+\mathrm{se}_{ij} = \sqrt{E_{ij}\left(1 - \frac{\text{row total}_i}{n}\right)\left(1 - \frac{\text{column total}_j}{n}\right)},
+\]
+and the standardized residual is $(O_{ij} - E_{ij})/\mathrm{se}_{ij}$. Each cell is shown below as observed (expected) [standardized residual]:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & Not stopped & Bribe requested & Stopped/warning \\
+\midrule
+Upper & 14 (13.50) [0.32] & 6 (8.36) [$-1.64$] & 7 (5.14) [1.52] \\
+Lower & 7 (7.50) [$-0.32$] & 7 (4.64) [1.64] & 1 (2.86) [$-1.52$] \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}
+#standard error for each cell 
+row_prop <- row_tot / n
+col_prop <- col_tot / n
+se <- sqrt(expected * ((1 - row_prop) %*% t(1 - col_prop)))
+print(se)
+
+#standardized residuals: (O - E) / se
+st_re <- (con_tab - expected) / se
+print(round(st_re, 3))
+\end{lstlisting}
+
+\subsection*{1(d) Interpretation}
+
+Under independence, the standardized residuals are approximately standard normal. At $\alpha = 0.10$ (two-tailed, $0.05$ in each tail) the cutoff is $\pm 1.645$.
+
+\begin{itemize}
+  \item \textbf{Bribe requested:} the residuals come out at +1.64 for lower class drivers and -1.64 for upper class drivers. So just under the alpha (+/- 1.645)- meaning that lower class drivers get asked for bribes more than independence expected. However, still before the alpha cutoff so it is not statistically significant
+  \item \textbf{Stopped/warning:} upper-class drivers were stopped or warned somewhat more than expected ($+1.52$), again below the cutoff.
+  \item \textbf{Not stopped:} both residuals are small ($\pm 0.32$), so the two classes were not stopped at roughly the expected rates.
+\end{itemize}
+
+No cell reaches significance, which is consistent with the overall test in 1(b). The residuals add information that the overall test cannot: they show \emph{which cells} are furthest from independence and in which direction.
+
+Because the two classes have different sizes, the row percentages are easier to compare than raw counts:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & Not stopped & Bribe requested & Stopped/warning \\
+\midrule
+Upper & 51.9\% & 22.2\% & 25.9\% \\
+Lower & 46.7\% & 46.7\% & 6.7\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Roughly the same share of each class was not stopped, but lower-class drivers were asked for bribes about twice as often (46.7\% vs.\ 22.2\%) and were rarely stopped or warned (6.7\% vs.\ 25.9\%). With only 42 observations, though, these differences are not statistically distinguishable from chance.
+
+\begin{lstlisting}
+tab_out <- matrix(sprintf("%.0f (%.2f) [%.2f]", con_tab, expected, st_re),
+                  nrow = nrow(con_tab), dimnames = dimnames(con_tab))
+noquote(tab_out)
+
+round(100 * prop.table(con_tab, margin = 1), 1)
+
+\end{lstlisting}
+
+%==========================================================
+\section*{Question 2: Women Leaders and Drinking-Water Facilities}
+%==========================================================
+
+\subsection*{2(a) Hypotheses}
+
+Do villages with a female-reserved leader get more new or repaired drinking-water facilities? The effect of reservation is the slope $\beta_1$ in
+\[
+\text{water}_i = \beta_0 + \beta_1\,\text{reserved}_i + \varepsilon_i.
+\]
+
+   \begin{itemize}
+     \item $H_0: \beta_1 = 0$. Reserving the GP head position for women has no effect on the number of new or repaired drinking-water facilities.
+     \item $H_1: \beta_1 \neq 0$. Reserving the GP head position for women has an (unknown: either positive or negative) effect on the number of new or repaired drinking-water facilities.
+   \end{itemize}
+
+
+\subsection*{2(b) Bivariate Regression of Hypotheses}
+
+Let $x_i$ be \texttt{reserved}, $y_i$ be \texttt{water}, and $n$ the number of villages. The least-squares estimates are
+\[
+\hat\beta_1 = \frac{\sum_i (x_i - \bar x)(y_i - \bar y)}{\sum_i (x_i - \bar x)^2},
+\qquad
+\hat\beta_0 = \bar y - \hat\beta_1 \bar x.
+\]
+The residual variance uses $n-2$ degrees of freedom because two parameters were estimated from the data:
+\[
+\hat\sigma^2 = \frac{\sum_i \hat\varepsilon_i^2}{n-2},
+\qquad
+\mathrm{se}(\hat\beta_1) = \sqrt{\frac{\hat\sigma^2}{\sum_i (x_i - \bar x)^2}}.
+\]
+The test statistic is $t = \hat\beta_1 / \mathrm{se}(\hat\beta_1)$, compared with the critical value $t_{n-2,\,0.975}$, and the 95\% confidence interval is $\hat\beta_1 \pm t_{n-2,\,0.975}\,\mathrm{se}(\hat\beta_1)$.
+
+\begin{lstlisting}
+women <- read.csv("https://raw.githubusercontent.com/kosukeimai/qss/master/PREDICTION/women.csv")
+
+#n = observations, x = reserved, y = water
+x <- women$reserved
+y <- women$water
+nn <- length(y)
+
+print(x)
+print(y)
+print(nn)
+
+#Compute the means x_bar and y_bar.
+x_bar <- mean(x)
+y_bar <- mean(y)
+
+print(x_bar)
+print(y_bar)
+
+#Intercept: b0_hat = y_bar - b1_hat*x_bar
+#Slope: b1_hat = sum(x_i - x_bar)(y_i - y_bar) / sum(x_i - x_bar)^2
+Sxy <- sum((x - x_bar) * (y - y_bar))
+Sxx <- sum((x - x_bar)^2)
+b1  <- Sxy / Sxx
+b0  <- y_bar - b1 * x_bar
+
+print(Sxy)
+print(Sxx)
+print(b1)
+print(b0)
+
+fitted_values <- b0 + b1 * x                    
+residuals <- y - fitted_values           
+sigma2 <- sum(residuals^2) / (nn - 2)     
+se_b1  <- sqrt(sigma2 / Sxx)              
+
+print(fitted_values)
+print(residuals)
+print(sigma2)
+print(se_b1)
+
+\end{lstlisting}
+
+\begin{itemize}
+  \item \textbf{Fitted Values ($\hat\beta_0$ + $\hat\beta_1$ * x):} prediction for each village 
+  \item \textbf{Residuals:} actual minus predicted
+  \item \textbf{Residuals Variance (sigma2):} measure of how noisy the data is and nn - 2 instead of nn because we estimated two things (b0 and b1) from the data, which uses up two "degrees of freedom."
+  \item \textbf{Standard Error (se\_b1):} is the standard deviation of the estimate across different samples- turns the noise into uncertainty range
+\end{itemize}
+
+\begin{lstlisting}
+
+#t-statistic, critical value, two-tailed p-value
+t_stat <- b1 / se_b1
+t_crit <- qt(0.975, df = nn - 2)
+p_value  <- 2 * pt(-abs(t_stat), df = nn - 2)
+
+print(t_stat)
+print(t_crit)
+print(p_value)
+
+# 95\% confidence interval
+ci <- c(b1 - t_crit * se_b1, b1 + t_crit * se_b1)
+print(ci)
+
+results <- c(n = nn, b0 = b0, b1 = b1, se = se_b1,
+             t = t_stat, t_crit = t_crit, p = p_value)
+print(results)
+
+
+#alternatively, can do this too 
+summary(lm(water ~ reserved, data = women))
+
+\end{lstlisting}
+
+The $p$-value answers: If the null were true and reservation had no effect ---> how likely is it that I'd see an estimate this far from zero?
+If $p < 0.05$, that's unlikely, so you reject $H_0$. Estimated regression coefficient is large relative to its standard error, meaning the relationship is statistically significant
+If $p \geq 0.05$, you fail to reject $H_0$. You don't ``accept'' it, you just lack enough evidence against it.
+
+\begin{lstlisting}
+
+if (abs(t_stat) > t_crit) {
+  print("Reject the null hypothesises (H0: b1 = 0), as the t-stat was larger than the critical value")
+  }else{
+  print("Fail to reject H0- not enough statisticsal evidence  against it")
+}
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{lc}
+\toprule
+Quantity & Value \\
+\midrule
+Number of villages $n$ & 322 \\
+Intercept $\hat\beta_0$ & 14.73832 \\
+Slope $\hat\beta_1$ & 9.25 \\
+Standard error $\mathrm{se}(\hat\beta_1)$ & 3.947746 \\
+$t$-statistic & \fillin{t} \\
+Critical value $t_{n-2,\,0.975}$ & 2.343723 \\
+Two-tailed $p$-value & 0.0197 \\
+95\% CI for $\beta_1$ & 1.485608 17.019238 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Since $p = 0.0197 < 0.05$ (equivalently, $|t| > t_{\text{crit}}$), we \textbf{reject} $H_0$. The p-value answers the question: if reservation truly had no effect, how likely would we be to see an estimate this far from zero? Here that is unlikely. Had $p \geq 0.05$, we would only \emph{fail to reject} $H_0$, which is not the same as accepting it. The manual calculation can be checked against \texttt{summary(lm(water $\sim$ reserved, data = women))}.
+
+
+\subsection*{2(c) Interpret the Coefficient Estimate for Reservation Policy}
+
+The bivariate regression compares two groups of villages: those with a reserved seat ($\text{reserved}=1$) and those without ($\text{reserved}=0$). The regression is a way of making that comparison and testing whether the gap is real or due to chance.
+
+\begin{itemize}
+  \item \textbf{Intercept ($\hat\beta_0$):} the average number of new or repaired water facilities in unreserved villages.
+  \item \textbf{Slope ($\hat\beta_1$):} the difference between the two group averages (reserved minus unreserved).
+  \item \textbf{Standard error:} how much $\hat\beta_1$ would vary across different samples of villages.
+  \item \textbf{$t$-statistic:} how many standard errors $\hat\beta_1$ is from zero. A magnitude above roughly 2 means the difference is too large to attribute to chance.
+  \item \textbf{$p$-value:} if $H_0$ were true, the probability of an estimate at least this extreme. A small value (here $p < 0.05$) means a difference this large is unlikely to be chance.
+\end{itemize}
+
+The estimated coefficient on \texttt{reserved} is 9.25: on average, villages in GPs reserved for women leaders have about 9 more new or repaired drinking-water facilities than villages in unreserved GPs. The p-value of 0.0197 is below 0.05, so we reject the null hypothesis and conclude there is statistically significant evidence that the reservation policy affects the number of drinking-water facilities. Because reservation was randomly assigned, this estimate can be interpreted as the causal effect of reservation.
+
+
+\end{document}
